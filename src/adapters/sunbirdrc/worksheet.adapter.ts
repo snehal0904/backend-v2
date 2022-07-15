@@ -13,6 +13,19 @@ export class WorksheetService {
   url = `${process.env.BASEAPIURL}/Worksheet`;
 
   public async createWorksheet(request: any, worksheetDto: WorksheetDto) {
+    var templateId = 56;
+    var axios = require("axios");
+    var confi = {
+      method: "get",
+      url: `${this.url}${templateId}`,
+      headers: {
+        Authorization: request.headers.authorization,
+      },
+    };
+    const getContent = await axios(confi);
+    const contentData = getContent.data;
+    console.log(contentData);
+    return;
     return this.httpService
       .post(`${this.url}`, worksheetDto, {
         headers: {
@@ -94,6 +107,7 @@ export class WorksheetService {
     request: any,
     worksheetSearchDto: WorksheetSearchDto
   ) {
+    console.log("heree");
     return this.httpService
       .post(`${this.url}/search`, worksheetSearchDto, {
         headers: {
