@@ -1,7 +1,15 @@
 import { StudentInterface } from "./interfaces/student.interface";
-import { StudentService } from "../adapters/default/student.adapter";
+import {
+  StudentService,
+  SunbirdStudentToken,
+} from "../adapters/sunbirdrc/student.adapter";
 
-import { CacheInterceptor, Request } from "@nestjs/common";
+import {
+  CacheInterceptor,
+  CACHE_MANAGER,
+  Inject,
+  Request,
+} from "@nestjs/common";
 import {
   ApiTags,
   ApiBody,
@@ -25,10 +33,22 @@ import {
 } from "@nestjs/common";
 import { StudentDto } from "./dto/student.dto";
 import { StudentSearchDto } from "./dto/student-search.dto";
+import {
+  EsamwadStudentService,
+  EsamwadStudentToken,
+} from "src/adapters/esamwad/student.adapter";
+import { IServicelocator } from "src/adapters/studentservicelocator";
+import { StudentAdapter } from "./studentadapter";
 @ApiTags("Student")
 @Controller("student")
 export class StudentController {
-  constructor(private service: StudentService) {}
+  constructor(
+    private service: StudentService,
+    private esamwadService: EsamwadStudentService,
+    @Inject(CACHE_MANAGER) private cacheManager,
+
+    private studentAdapter: StudentAdapter
+  ) {}
 
   @Get("/:id")
   @UseInterceptors(ClassSerializerInterceptor, CacheInterceptor)
@@ -39,7 +59,9 @@ export class StudentController {
     strategy: "excludeAll",
   })
   getStudent(@Param("id") studentId: string, @Req() request: Request) {
-    return this.service.getStudent(studentId, request);
+    return this.studentAdapter
+      .buildStudentAdapter()
+      .getStudent(studentId, request);
   }
 
   @Post()
@@ -52,7 +74,9 @@ export class StudentController {
     @Req() request: Request,
     @Body() studentDto: StudentDto
   ) {
-    return this.service.createStudent(request, studentDto);
+    return this.studentAdapter
+      .buildStudentAdapter()
+      .createStudent(request, studentDto);
   }
 
   @Put("/:id")
@@ -65,7 +89,9 @@ export class StudentController {
     @Req() request: Request,
     @Body() studentDto: StudentDto
   ) {
-    return await this.service.updateStudent(id, request, studentDto);
+    return await this.studentAdapter
+      .buildStudentAdapter()
+      .updateStudent(id, request, studentDto);
   }
 
   @Post("/search")
@@ -81,6 +107,8 @@ export class StudentController {
     @Req() request: Request,
     @Body() studentSearchDto: StudentSearchDto
   ) {
-    return await this.service.searchStudent(request, studentSearchDto);
+    return this.studentAdapter
+      .buildStudentAdapter()
+      .searchStudent(request, studentSearchDto);
   }
 }

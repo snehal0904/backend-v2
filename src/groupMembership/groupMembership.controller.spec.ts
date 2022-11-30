@@ -1,6 +1,6 @@
 import { Test, TestingModule } from "@nestjs/testing";
+import { GroupMembershipService } from "src/adapters/hasura/groupMembership.adapter";
 import { GroupMembershipController } from "./groupMembership.controller";
-import { GroupMembershipService } from "../adapters/default/groupMembership.adapter";
 
 describe("GroupMembershipController", () => {
   let controller: GroupMembershipController;

@@ -1,10 +1,16 @@
-import { Module } from "@nestjs/common";
+import { CacheModule, Module } from "@nestjs/common";
 import { HttpModule } from "@nestjs/axios";
-import { GroupMembershipService } from "../adapters/default/groupMembership.adapter";
-import { GroupMembershipController } from "./groupMembership.controller";
 
+import { GroupMembershipController } from "./groupMembership.controller";
+import { GroupMembershipService } from "src/adapters/hasura/groupMembership.adapter";
+const ttl = process.env.TTL as never;
 @Module({
-  imports: [HttpModule],
+  imports: [
+    HttpModule,
+    CacheModule.register({
+      ttl: ttl,
+    }),
+  ],
   controllers: [GroupMembershipController],
   providers: [GroupMembershipService],
 })

@@ -3,7 +3,6 @@ import {
   Get,
   Post,
   Put,
-  Patch,
   Param,
   Body,
   UseInterceptors,
@@ -13,7 +12,6 @@ import {
   Request,
   CacheInterceptor,
 } from "@nestjs/common";
-import { SchoolService } from "../adapters/default/school.adapter";
 import { SchoolDto } from "./dto/school.dto";
 import {
   ApiTags,
@@ -24,10 +22,11 @@ import {
   ApiBasicAuth,
 } from "@nestjs/swagger";
 import { SchoolSearchDto } from "./dto/school-search.dto";
+import { SchoolAdapter } from "./schooladapter";
 @ApiTags("School")
 @Controller("school")
 export class SchoolController {
-  constructor(private service: SchoolService) {}
+  constructor(private schoolAdapter: SchoolAdapter) {}
 
   @Get("/:id")
   @UseInterceptors(ClassSerializerInterceptor, CacheInterceptor)
@@ -38,7 +37,7 @@ export class SchoolController {
     strategy: "excludeAll",
   })
   public async getSchool(@Param("id") id: string, @Req() request: Request) {
-    return this.service.getSchool(id, request);
+    return this.schoolAdapter.buildSchoolAdapter().getSchool(id, request);
   }
 
   @Post()
@@ -51,7 +50,9 @@ export class SchoolController {
     @Req() request: Request,
     @Body() schoolDto: SchoolDto
   ) {
-    return this.service.createSchool(request, schoolDto);
+    return this.schoolAdapter
+      .buildSchoolAdapter()
+      .createSchool(request, schoolDto);
   }
 
   @Put("/:id")
@@ -64,7 +65,9 @@ export class SchoolController {
     @Req() request: Request,
     @Body() schoolDto: SchoolDto
   ) {
-    return await this.service.updateSchool(id, request, schoolDto);
+    return this.schoolAdapter
+      .buildSchoolAdapter()
+      .updateSchool(id, request, schoolDto);
   }
   @Post("/search")
   @ApiBasicAuth("access-token")
@@ -79,6 +82,8 @@ export class SchoolController {
     @Req() request: Request,
     @Body() schoolSearchDto: SchoolSearchDto
   ) {
-    return await this.service.searchSchool(request, schoolSearchDto);
+    return this.schoolAdapter
+      .buildSchoolAdapter()
+      .searchSchool(request, schoolSearchDto);
   }
 }

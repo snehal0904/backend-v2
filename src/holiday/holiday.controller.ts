@@ -10,6 +10,7 @@ import {
   SerializeOptions,
   Req,
   CacheInterceptor,
+  Query,
 } from "@nestjs/common";
 import {
   ApiTags,
@@ -18,15 +19,16 @@ import {
   ApiForbiddenResponse,
   ApiCreatedResponse,
   ApiBasicAuth,
+  ApiQuery,
 } from "@nestjs/swagger";
-import { HolidayService } from "src/adapters/default/holiday.adapter";
 import { HolidayDto } from "./dto/holiday.dto";
 import { HolidaySearchDto } from "./dto/holiday-search.dto";
 import { Request } from "@nestjs/common";
+import { HolidayAdapter } from "./holidayadapter";
 @ApiTags("Holiday")
 @Controller("holiday")
 export class HolidayController {
-  constructor(private readonly service: HolidayService) {}
+  constructor(private holidayProvider: HolidayAdapter) {}
 
   @Get("/:id")
   @UseInterceptors(ClassSerializerInterceptor, CacheInterceptor)
@@ -36,7 +38,9 @@ export class HolidayController {
     strategy: "excludeAll",
   })
   getHolidays(@Param("id") holidayId: string, @Req() request: Request) {
-    return this.service.getHoliday(holidayId, request);
+    return this.holidayProvider
+      .buildHolidayAdapter()
+      .getHoliday(holidayId, request);
   }
 
   @Post()
@@ -49,7 +53,9 @@ export class HolidayController {
     @Req() request: Request,
     @Body() holidayDto: HolidayDto
   ) {
-    return this.service.createHoliday(request, holidayDto);
+    return await this.holidayProvider
+      .buildHolidayAdapter()
+      .createHoliday(request, holidayDto);
   }
 
   @Put("/:id")
@@ -62,7 +68,9 @@ export class HolidayController {
     @Req() request: Request,
     @Body() holidayDto: HolidayDto
   ) {
-    return await this.service.updateHoliday(holidayId, request, holidayDto);
+    return await this.holidayProvider
+      .buildHolidayAdapter()
+      .updateHoliday(holidayId, request, holidayDto);
   }
 
   @Post("/search")
@@ -78,6 +86,25 @@ export class HolidayController {
     @Req() request: Request,
     @Body() holidaySearchDto: HolidaySearchDto
   ) {
-    return await this.service.searchHoliday(request, holidaySearchDto);
+    return await this.holidayProvider
+      .buildHolidayAdapter()
+      .searchHoliday(request, holidaySearchDto);
+  }
+
+  @Get("")
+  @UseInterceptors(ClassSerializerInterceptor, CacheInterceptor)
+  @ApiBasicAuth("access-token")
+  @ApiOkResponse({ description: " Ok." })
+  @ApiForbiddenResponse({ description: "Forbidden" })
+  @ApiQuery({ name: "fromDate" })
+  @ApiQuery({ name: "toDate" })
+  public async holidayFilter(
+    @Query("fromDate") date: string,
+    @Query("toDate") toDate: string,
+    @Req() request: Request
+  ) {
+    return await this.holidayProvider
+      .buildHolidayAdapter()
+      .holidayFilter(date, toDate, request);
   }
 }

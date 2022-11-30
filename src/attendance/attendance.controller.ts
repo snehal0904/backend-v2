@@ -1,4 +1,3 @@
-import { AttendanceService } from "../adapters/default/attendance.adapter";
 import {
   ApiTags,
   ApiBody,
@@ -15,7 +14,6 @@ import {
   Post,
   Body,
   Put,
-  Patch,
   Param,
   UseInterceptors,
   ClassSerializerInterceptor,
@@ -27,15 +25,20 @@ import {
   Query,
 } from "@nestjs/common";
 import { AttendanceDto } from "./dto/attendance.dto";
-import { request } from "http";
 import { FileInterceptor } from "@nestjs/platform-express";
 import { diskStorage } from "multer";
 import { editFileName, imageFileFilter } from "./utils/file-upload.utils";
 import { AttendanceSearchDto } from "./dto/attendance-search.dto";
+import { AttendanceHasuraService } from "src/adapters/hasura/attendance.adapter";
+import { AttendaceAdapter } from "./attendanceadapter";
+
 @ApiTags("Attendance")
 @Controller("attendance")
 export class AttendanceController {
-  constructor(private service: AttendanceService) {}
+  constructor(
+    private service: AttendanceHasuraService,
+    private attendaceAdapter: AttendaceAdapter
+  ) {}
 
   @Get("/:id")
   @UseInterceptors(ClassSerializerInterceptor, CacheInterceptor)
@@ -49,7 +52,9 @@ export class AttendanceController {
     @Param("id") attendanceId: string,
     @Req() request: Request
   ) {
-    return this.service.getAttendance(attendanceId, request);
+    return await this.attendaceAdapter
+      .buildAttenceAdapter()
+      .getAttendance(attendanceId, request);
   }
 
   @Post()
@@ -78,9 +83,10 @@ export class AttendanceController {
     const response = {
       image: image?.filename,
     };
-
     Object.assign(attendaceDto, response);
-    return this.service.createAttendance(request, attendaceDto);
+    return this.attendaceAdapter
+      .buildAttenceAdapter()
+      .createAttendance(request, attendaceDto);
   }
 
   @Put("/:id")
@@ -104,15 +110,16 @@ export class AttendanceController {
   public async updateAttendace(
     @Param("id") attendanceId: string,
     @Req() request: Request,
-    @Body() attendaceDto: AttendanceDto,
+    @Body() attendanceDto: AttendanceDto,
     @UploadedFile() image
   ) {
     const response = {
       image: image?.filename,
     };
-
-    Object.assign(attendaceDto, response);
-    return this.service.updateAttendance(attendanceId, request, attendaceDto);
+    Object.assign(attendanceDto, response);
+    return this.attendaceAdapter
+      .buildAttenceAdapter()
+      .updateAttendance(attendanceId, request, attendanceDto);
   }
 
   @Post("/search")
@@ -128,7 +135,9 @@ export class AttendanceController {
     @Req() request: Request,
     @Body() studentSearchDto: AttendanceSearchDto
   ) {
-    return await this.service.searchAttendance(request, studentSearchDto);
+    return this.attendaceAdapter
+      .buildAttenceAdapter()
+      .searchAttendance(request, studentSearchDto);
   }
 
   @Get("usersegment/:attendance")
@@ -136,21 +145,24 @@ export class AttendanceController {
   // @ApiBasicAuth("access-token")
   @ApiOkResponse({ description: " Ok." })
   @ApiForbiddenResponse({ description: "Forbidden" })
+  @ApiQuery({ name: "groupId", required: false })
+  @ApiQuery({ name: "date" })
   public async userSegment(
+    @Query("groupId") groupId: string,
     @Param("attendance") attendance: string,
     @Query("date") date: string,
     @Req() request: Request
   ) {
-    return await this.service.userSegment(attendance, date, request);
+    return await this.service.userSegment(groupId, attendance, date, request);
   }
 
   @Get("")
-  @UseInterceptors(ClassSerializerInterceptor, CacheInterceptor)
+  @UseInterceptors(ClassSerializerInterceptor)
   @ApiBasicAuth("access-token")
   @ApiOkResponse({ description: " Ok." })
   @ApiForbiddenResponse({ description: "Forbidden" })
-  @ApiQuery({ name: "fromDate", required: false })
-  @ApiQuery({ name: "toDate", required: false })
+  @ApiQuery({ name: "fromDate" })
+  @ApiQuery({ name: "toDate" })
   @ApiQuery({ name: "userId", required: false })
   @ApiQuery({ name: "userType", required: false })
   @ApiQuery({ name: "attendance", required: false })
@@ -168,20 +180,69 @@ export class AttendanceController {
     @Query("schoolId") schoolId: string,
     @Query("eventId") eventId: string,
     @Query("topicId") topicId: string,
-
     @Req() request: Request
   ) {
-    return await this.service.attendanceFilter(
-      date,
-      toDate,
-      userId,
-      userType,
-      attendance,
-      groupId,
-      schoolId,
-      eventId,
-      topicId,
-      request
-    );
+    return this.attendaceAdapter
+      .buildAttenceAdapter()
+      .attendanceFilter(
+        date,
+        toDate,
+        userId,
+        userType,
+        attendance,
+        groupId,
+        schoolId,
+        eventId,
+        topicId,
+        request
+      );
+  }
+
+  @Post("bulkAttendance")
+  @ApiBasicAuth("access-token")
+  @ApiCreatedResponse({
+    description: "Attendance has been created successfully.",
+  })
+  @ApiForbiddenResponse({ description: "Forbidden" })
+  @UseInterceptors(ClassSerializerInterceptor)
+  public async multipleAttendance(
+    @Req() request: Request,
+    @Body() attendanceDto: [Object]
+  ) {
+    return this.attendaceAdapter
+      .buildAttenceAdapter()
+      .multipleAttendance(request, attendanceDto);
+  }
+
+  @Post(":groupId/studentdetails")
+  @UseInterceptors(ClassSerializerInterceptor)
+  @ApiBasicAuth("access-token")
+  @ApiOkResponse({ description: " Ok." })
+  @ApiForbiddenResponse({ description: "Forbidden" })
+  @ApiQuery({ name: "date", required: false })
+  public async studentAttendanceByGroup(
+    @Query("date") date: string,
+    @Param("groupId") groupId: string,
+    @Req() request: Request
+  ) {
+    return this.attendaceAdapter
+      .buildAttenceAdapter()
+      .studentAttendanceByGroup(date, groupId, request);
+  }
+
+  @Post("studentdetail/:userId")
+  @UseInterceptors(ClassSerializerInterceptor)
+  @ApiBasicAuth("access-token")
+  @ApiOkResponse({ description: " Ok." })
+  @ApiForbiddenResponse({ description: "Forbidden" })
+  @ApiQuery({ name: "date", required: false })
+  public async studentAttendanceByUserId(
+    @Query("date") date: string,
+    @Param("userId") userId: string,
+    @Req() request: Request
+  ) {
+    return this.attendaceAdapter
+      .buildAttenceAdapter()
+      .studentAttendanceByUserId(date, userId, request);
   }
 }

@@ -3,18 +3,21 @@ import { ApiProperty, ApiPropertyOptional } from "@nestjs/swagger";
 
 export class AttendanceDto {
   @Expose()
+  id: string;
+
+  @Expose()
   attendanceId: string;
 
   @ApiProperty({
     type: String,
-    description: "The id of the attendance ",
+    description: "The schoolId of the attendance ",
     default: "",
   })
   @Expose()
   @ApiPropertyOptional()
   schoolId: string;
 
-  @ApiProperty({
+  @ApiPropertyOptional({
     type: String,
     description: "The userType of the attendance",
     default: "",
@@ -30,7 +33,7 @@ export class AttendanceDto {
   @Expose()
   userId: string;
 
-  @ApiProperty({
+  @ApiPropertyOptional({
     type: String,
     description: "The groupid of the attendance",
     default: "",
@@ -113,6 +116,10 @@ export class AttendanceDto {
   @Expose()
   metaData: [string];
 
+  @ApiPropertyOptional()
+  @Expose()
+  syncTime: string;
+
   @Expose()
   createdAt: string;
 
@@ -125,28 +132,7 @@ export class AttendanceDto {
   @Expose()
   updatedBy: string;
 
-  @ApiPropertyOptional()
-  @Expose()
-  syncTime: string;
-
   constructor(obj: any) {
-    this.attendanceId = obj?.osid ? `${obj.osid}` : "";
-    this.schoolId = obj?.schoolId ? `${obj.schoolId}` : "";
-    this.userType = obj?.userType ? `${obj.userType}` : "";
-    this.userId = obj?.userId ? `${obj.userId}` : "";
-    this.groupId = obj?.groupId ? `${obj.groupId}` : "";
-    this.topicId = obj?.topicId ? `${obj.topicId}` : "";
-    this.eventId = obj?.eventId ? `${obj.eventId}` : "";
-    this.remark = obj?.remark ? `${obj.remark}` : "";
-    this.attendance = obj?.attendance ? `${obj.attendance}` : "";
-    this.attendanceDate = obj?.attendanceDate ? `${obj.attendanceDate}` : "";
-    this.latitude = obj?.latitude ? obj.latitude : 0;
-    this.longitude = obj?.longitude ? obj.longitude : 0;
-    this.image = obj?.image ? `${obj.image}` : "";
-    this.syncTime = obj?.syncTime ? `${obj.syncTime}` : "";
-    this.createdAt = obj?.osCreatedAt ? `${obj.osCreatedAt}` : "";
-    this.updatedAt = obj?.osUpdatedAt ? `${obj.osUpdatedAt}` : "";
-    this.createdBy = obj?.osCreatedBy ? `${obj.osCreatedBy}` : "";
-    this.updatedBy = obj?.osUpdatedBy ? `${obj.osUpdatedBy}` : "";
+    Object.assign(this, obj);
   }
 }
